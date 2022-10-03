@@ -15,6 +15,10 @@ We are interested in highway miles per gallon, or the hwy variable.
 Create a histogram of this variable. Describe what you see/learn.
 
 ```{r}
+library(tidyverse)
+library(ISLR)
+library(tidymodels)
+mpg
 hist(mpg$hwy)
 ```
 In the histogram of highway miles per gallon it appears to be bimodal where 
@@ -62,6 +66,7 @@ new_data<-mpg[c(3,4,5,8,9)]
 new_data
 ```
 ```{r}
+library(corrplot)
 N=cor(new_data)
 corrplot(N,type="lower",method="number")
 ```
