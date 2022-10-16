@@ -1,0 +1,106 @@
+---
+title: "Homework 2"
+output: html_document
+date: "2022-10-10"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Question 1: Add age to the data set. Age is calculated as the number of rings plus 1.5
+Assess and describe the distribution of age
+```{r}
+library(tidyverse)
+library(tidymodels)
+codebook<-read_csv("data/abalone_codebook.txt",show_col_types = FALSE)
+```
+
+```{r}
+
+abalone$age<-abalone$rings + 1.5
+```
+
+```{r}
+hist(abalone$age)
+summary(abalone$age)
+```
+
+Looking at a histogram of the variable age, we can see that it is slightly right skewed and the mean of age is 11.43.With the median age of 10.50, since the data is skewed this would be a better measure of the data. 
+
+Question 2: Split the data into a training set and a testing set. use stratified sampling. you should decide on 
+appropriate percentages for splitting the data
+
+```{r}
+set.seed(434)
+abalone_split<- initial_split(abalone, prop= 0.80, strata= age)
+abalone_train <-training(abalone_split)
+abalone_test <-testing(abalone_split)
+```
+
+Question 3: using training data, create a recipe predicting the outcome variable, age, with all other predictor 
+variables. Should not include rings to predict age. 
+Explain why you shouldn't use rings to predict age. 
+Steps for recipe: 1. dummy code categorical predictors.
+2. create interactions between type and shucked_weight, longest_shell and diameter, shucked_weight and shell_weight
+3. center all predictors
+4. scale all predictors. 
+Used rings to generate age. function of age. 
+```{r}
+abalone_recipe<- recipe(age~., data= abalone_train) %>%
+  step_rm(rings) %>%
+  step_dummy(all_nominal_predictors()) %>%
+  step_interact(terms= ~starts_with("type"):shucked_weight + longest_shell:diameter+
+                  shucked_weight:shell_weight) %>%
+  step_normalize(all_predictors())
+
+```
+
+Question 4: create and store a linear regression object using the "lm" engine
+
+
+```{r}
+lm_model <- linear_reg() %>% 
+  set_engine("lm")
+```
+
+
+Question 5: 1. set up an empty workflow 2. add the model created in question 4
+3. add the recipe created in question 3 
+
+```{r}
+lm_wflow <- workflow() %>% 
+  add_model(lm_model) %>% 
+  add_recipe(abalone_recipe)
+```
+
+Question 6: Use your fit() object to predict the age of a hypothetical female abalone with longest_shell = 0.50, 
+diameter = 0.10, height = 0.30, whole_weight = 4, shucked_weight = 1, viscera_weight = 2, shell_weight = 1.
+
+```{r}
+lm_fit <- fit(lm_wflow, abalone_train)
+predict(lm_fit,new_data=data.frame(type='F',longest_shell=0.50,diameter=0.10,height=0.30,whole_weight=4,
+                                  shucked_weight=1, viscera_weight=2,shell_weight=1,rings=9))
+```
+The predicted age of a hypothetical female abalone with the above specifications is 22.349. 
+
+Question 7: 1. create a metric set that includes  R2, RMSE (root mean squared error), and MAE (mean absolute error).
+2. Use predict() and bind_cols() to create a tibble of your model’s predicted values from the 
+training data along with the actual observed ages (these are needed to assess your model’s performance).
+3. Finally, apply your metric set to the tibble, report the results, and interpret the R2 value.
+
+```{r}
+abalone_train_res<-predict(lm_fit, new_data=abalone_train %>% select(-age))
+abalone_train_res
+abalone_train_res<-bind_cols(abalone_train_res, abalone_train %>% select(age))
+abalone_train_res
+
+```
+
+
+```{r}
+abalone_metrics <- metric_set(rmse, rsq, mae)
+abalone_metrics(abalone_train_res, truth = age, 
+                estimate = .pred)
+```
+The R2 value is 0.558. This means that 0.558 of the variability in Y can be explained using X. 
