@@ -13,17 +13,17 @@ Assess and describe the distribution of age
 ```{r}
 library(tidyverse)
 library(tidymodels)
-codebook<-read_csv("data/abalone_codebook.txt",show_col_types = FALSE)
+abalone_data<-read.csv("/Users/kassandratrejo/Desktop/131-Homeworks/abalone.csv")
+```
+
+
+```{r}
+abalone_data$age<-abalone_data$rings + 1.5
 ```
 
 ```{r}
-
-abalone$age<-abalone$rings + 1.5
-```
-
-```{r}
-hist(abalone$age)
-summary(abalone$age)
+hist(abalone_data$age)
+summary(abalone_data$age)
 ```
 
 Looking at a histogram of the variable age, we can see that it is slightly right skewed and the mean of age is 11.43.With the median age of 10.50, since the data is skewed this would be a better measure of the data. 
@@ -33,7 +33,7 @@ appropriate percentages for splitting the data
 
 ```{r}
 set.seed(434)
-abalone_split<- initial_split(abalone, prop= 0.80, strata= age)
+abalone_split<- initial_split(abalone_data, prop= 0.80, strata= age)
 abalone_train <-training(abalone_split)
 abalone_test <-testing(abalone_split)
 ```
@@ -45,7 +45,10 @@ Steps for recipe: 1. dummy code categorical predictors.
 2. create interactions between type and shucked_weight, longest_shell and diameter, shucked_weight and shell_weight
 3. center all predictors
 4. scale all predictors. 
-Used rings to generate age. function of age. 
+
+You shouldn't use rings to predict age because rings was already used ot generate age. Rings is a function of age and therefore if
+used in the model it will give us a false estimate or our predictors. 
+ 
 ```{r}
 abalone_recipe<- recipe(age~., data= abalone_train) %>%
   step_rm(rings) %>%
@@ -103,4 +106,6 @@ abalone_metrics <- metric_set(rmse, rsq, mae)
 abalone_metrics(abalone_train_res, truth = age, 
                 estimate = .pred)
 ```
-The R2 value is 0.558. This means that 0.558 of the variability in Y can be explained using X. 
+The R2 value is 0.558. This means that 0.558 of the variability in Y can be explained using X. The RSE is an absolute measure
+of lack of fit, or the standard deviation of the residuals. Our RSE value is 2.1602. The MAE value is 1.545. MAE can be 
+interpreted as the average error that the model's predictions have compared to the actual value.
